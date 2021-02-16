@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_fer/routes.dart';
 
 class ImageResultArguments {
   final String imagePath;
@@ -16,6 +18,8 @@ class ImageResult extends StatefulWidget {
 class _ImageResultState extends State<ImageResult> {
   String _imagePath = "";
   static const platform = const MethodChannel('dev.sanketnaik.flutter_fer/fer');
+  String _timeTaken = "";
+  String _prediction = "";
 
   @override
   void initState() {
@@ -36,6 +40,8 @@ class _ImageResultState extends State<ImageResult> {
         await platform.invokeMethod('predict', {"imagePath": _imagePath});
     setState(() {
       _imagePath = result[0];
+      _prediction = result[1];
+      _timeTaken = result[2];
     });
     print("RESULT => ${result}");
   }
@@ -46,11 +52,56 @@ class _ImageResultState extends State<ImageResult> {
       appBar: AppBar(
         title: Text('Image Result'),
       ),
-      body: _imagePath == ""
-          ? CircularProgressIndicator()
-          : Image.file(
-              File(_imagePath),
+      body: Column(
+        children: [
+          Expanded(
+            child: _imagePath == ""
+                ? CircularProgressIndicator()
+                : Image.file(
+                    File(_imagePath),
+                  ),
+          ),
+          Column(
+            children: [
+              Text('Prediction => ${_prediction}'),
+              Text('Time Taken = ${_timeTaken} ms'),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(
+              bottom: 10.0,
+              top: 5.0,
             ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                RaisedButton(
+                  textColor: Colors.white,
+                  color: Colors.blue,
+                  padding:
+                      EdgeInsets.symmetric(vertical: 10.0, horizontal: 30.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.chevron_left,
+                      ),
+                      Text(
+                        'Retry',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pushReplacementNamed(CAPTURE_IMAGE);
+                  },
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 }

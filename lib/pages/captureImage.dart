@@ -52,7 +52,8 @@ class _CaptureImageState extends State<CaptureImage>
     await _controller.takePicture().then((XFile file) async {
       if (mounted) {
         print('Image Saved to ${file.path}');
-        Navigator.of(context).pushNamed(
+        _controller?.dispose();
+        Navigator.of(context).pushReplacementNamed(
           IMAGE_RESULT,
           arguments: ImageResultArguments(
             imagePath: file.path.toString(),

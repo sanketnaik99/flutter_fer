@@ -8,28 +8,30 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugins.GeneratedPluginRegistrant
+import org.opencv.android.BaseLoaderCallback
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs.imread
-import org.opencv.objdetect.CascadeClassifier
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
-import org.opencv.core.Core.*
 import org.opencv.imgcodecs.Imgcodecs.imwrite
-import org.opencv.imgproc.Imgproc.rectangle
-import org.opencv.imgproc.Imgproc.resize
+import org.opencv.imgproc.Imgproc.*
+import org.opencv.objdetect.CascadeClassifier
+import org.pytorch.IValue
 import org.pytorch.Module
 import org.pytorch.PyTorchAndroid
 import org.pytorch.Tensor
 import org.pytorch.torchvision.TensorImageUtils
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
+
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "dev.sanketnaik.flutter_fer/fer"
 
     init {
+        Log.i("OPENCV", "LOADING_OPENCV")
         if(OpenCVLoader.initDebug()){
             Log.i("OPEN_CV", "LOADED OPENCV");
         }else{
@@ -56,6 +58,8 @@ class MainActivity: FlutterActivity() {
     }
 
     private fun predict(imagePath: String): MutableList<String> {
+        val startTime = System.nanoTime()
+        Log.i("OPENCV", "LOADING_OPENCV")
         if(OpenCVLoader.initDebug()){
             Log.i("OPEN_CV", "LOADED OPENCV");
         }else{
@@ -73,7 +77,7 @@ class MainActivity: FlutterActivity() {
         val mCascadeFile = File(cascadeDir, "haarcascade_frontalface_default.xml")
         val os: FileOutputStream = FileOutputStream(mCascadeFile)
 
-        val buffer = ByteArray(4096 )
+        val buffer = ByteArray(4096)
         var byteRead = inputStream.read(buffer)
         while (byteRead != -1) {
             os.write(buffer, 0, byteRead)
@@ -93,7 +97,6 @@ class MainActivity: FlutterActivity() {
 
         val rects :List<Rect> = detections.toList()
         val rect = rects.get(0)
-        rectangle(image, Point(rect.x.toDouble(), rect.y.toDouble()), Point((rect.x + rect.width).toDouble(), (rect.y + rect.height).toDouble()), Scalar(0.0,255.0,0.0, 255.0), 5, 4, 0)
 
         val cropped: Mat = Mat(image, rect)
         resize(cropped, cropped, Size(48.0, 48.0))
@@ -101,25 +104,49 @@ class MainActivity: FlutterActivity() {
         Utils.matToBitmap(cropped, bitmap)
         val resizedImage = Bitmap.createScaledBitmap(bitmap, 48, 48, true)
 
-//        PyTorchAndroid.setNumThreads(4)
         val inputTensor: Tensor = TensorImageUtils.bitmapToFloat32Tensor(resizedImage, TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
-        Log.i("INPUT TENSOR", "${inputTensor.dtype()}")
+        Log.i("INPUT TENSOR", "${inputTensor.shape()}")
 
 
-
-        var module: Module
+        var module: Module? = null
         try {
-            module = PyTorchAndroid.loadModuleFromAsset(assets, "convnet-quantized-full.pt")
+            module =  PyTorchAndroid.loadModuleFromAsset(assets, "convnet-traced-new.pt")
             Log.i("PYTORCH", "MODULE LOADED SUCCESSFULLY")
         }catch (e: IOException){
             Log.i("IO_EXCEPTION", "IO EXCEPTION WHILE LOADING THE MODEL")
         }
 
+        val outputTensor: Tensor = module?.forward(IValue.from(inputTensor))?.toTensor() ?: inputTensor
+        val scores: FloatArray = outputTensor.dataAsFloatArray
+
+        Log.i("SCORES", "${scores.toString()}")
+        // searching for the index with maximum score
+        // searching for the index with maximum score
+        var maxScore: Float = -Float.MAX_VALUE
+        var maxScoreIdx = -1
+        for (i in 0 until scores.size) {
+            if (scores[i] > maxScore) {
+                maxScore = scores[i]
+                maxScoreIdx = i
+            }
+        }
+
+        val classes: Array<String> = arrayOf("fear", "angry", "happy", "neutral", "surprise", "disgust", "sad")
+        val prediction = classes[maxScoreIdx]
+
+        Log.i("OUTPUT PREDICTION", "PREDICTED OUTPUT CLASS => ${maxScoreIdx}")
+        Log.i("OUTPUT PREDICTION", "PREDICTED OUTPUT => ${prediction}")
+
+        putText(image, prediction, Point(rect.x.toDouble(), (rect.y.toDouble() - 10.0)), Core.FONT_HERSHEY_SIMPLEX, 2.0, Scalar(0.0, 255.0, 0.0, 255.0))
+        rectangle(image, Point(rect.x.toDouble(), rect.y.toDouble()), Point((rect.x + rect.width).toDouble(), (rect.y + rect.height).toDouble()), Scalar(0.0, 255.0, 0.0, 255.0), 5, 4, 0)
+
 
         imwrite(newPath, image)
         val result: MutableList<String> = ArrayList()
+        val elapsedTime = (System.nanoTime() - startTime) / 1000000
         result.add(newPath)
-        result.add("Time Taken: 10 seconds")
+        result.add(prediction)
+        result.add(elapsedTime.toString())
         return result
     }
 }

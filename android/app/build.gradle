@@ -51,6 +51,10 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
+            minifyEnabled true
+            useProguard true
+
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -66,6 +70,6 @@ flutter {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation project(path: ':openCVLibrary3413')
-    implementation 'org.pytorch:pytorch_android:1.6.0'
-    implementation 'org.pytorch:pytorch_android_torchvision:1.6.0'
+    implementation 'org.pytorch:pytorch_android:1.7.0'
+    implementation 'org.pytorch:pytorch_android_torchvision:1.7.0'
 }
