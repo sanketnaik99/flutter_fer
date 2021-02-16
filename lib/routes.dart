@@ -1,0 +1,2 @@
+const String CAPTURE_IMAGE = 'CAPTURE_IMAGE';
+const String IMAGE_RESULT = 'CAPTURE_RESULT';
