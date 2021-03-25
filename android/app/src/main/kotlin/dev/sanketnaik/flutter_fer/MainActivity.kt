@@ -2,6 +2,8 @@ package dev.sanketnaik.flutter_fer
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Bundle
+import android.os.PersistableBundle
 import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
@@ -29,6 +31,38 @@ import java.io.InputStream
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "dev.sanketnaik.flutter_fer/fer"
+    private var faceDetector: CascadeClassifier? = null;
+    var module: Module? = null
+
+    override fun onStart() {
+        super.onStart()
+
+        Log.i("FACE_DETECTION", "LOADING CASCADE CLASSIFIER")
+        val inputStream: InputStream = resources.openRawResource(R.raw.haarcascade_frontalface_default)
+        val cascadeDir = getDir("cascade", Context.MODE_PRIVATE)
+        val mCascadeFile = File(cascadeDir, "haarcascade_frontalface_default.xml")
+        val os: FileOutputStream = FileOutputStream(mCascadeFile)
+
+        val buffer = ByteArray(4096)
+        var byteRead = inputStream.read(buffer)
+        while (byteRead != -1) {
+            os.write(buffer, 0, byteRead)
+            byteRead = inputStream.read(buffer)
+        }
+
+        inputStream.close()
+        os.close()
+
+        faceDetector = CascadeClassifier(mCascadeFile.absolutePath)
+
+
+        try {
+            module =  PyTorchAndroid.loadModuleFromAsset(assets, "convnet-traced-new.pt")
+            Log.i("PYTORCH", "MODULE LOADED SUCCESSFULLY")
+        }catch (e: IOException){
+            Log.i("IO_EXCEPTION", "IO EXCEPTION WHILE LOADING THE MODEL")
+        }
+    }
 
     init {
         Log.i("OPENCV", "LOADING_OPENCV")
@@ -59,12 +93,12 @@ class MainActivity: FlutterActivity() {
 
     private fun predict(imagePath: String): MutableList<String> {
         val startTime = System.nanoTime()
-        Log.i("OPENCV", "LOADING_OPENCV")
-        if(OpenCVLoader.initDebug()){
-            Log.i("OPEN_CV", "LOADED OPENCV");
-        }else{
-            Log.e("OPEN_CV", "FAILED TO LOAD OPENCV")
-        }
+//        Log.i("OPENCV", "LOADING_OPENCV")
+//        if(OpenCVLoader.initDebug()){
+//            Log.i("OPEN_CV", "LOADED OPENCV");
+//        }else{
+//            Log.e("OPEN_CV", "FAILED TO LOAD OPENCV")
+//        }
 
         val originalImage: Mat = imread(imagePath)
         val image: Mat = originalImage.clone()
@@ -72,25 +106,10 @@ class MainActivity: FlutterActivity() {
         pathList[pathList.size - 2] = pathList[pathList.size - 2] + "-new"
         val newPath = pathList.joinToString(".")
 
-        val inputStream: InputStream = resources.openRawResource(R.raw.haarcascade_frontalface_default)
-        val cascadeDir = getDir("cascade", Context.MODE_PRIVATE)
-        val mCascadeFile = File(cascadeDir, "haarcascade_frontalface_default.xml")
-        val os: FileOutputStream = FileOutputStream(mCascadeFile)
 
-        val buffer = ByteArray(4096)
-        var byteRead = inputStream.read(buffer)
-        while (byteRead != -1) {
-            os.write(buffer, 0, byteRead)
-            byteRead = inputStream.read(buffer)
-        }
-
-        inputStream.close()
-        os.close()
-
-        val faceDetector = CascadeClassifier(mCascadeFile.absolutePath)
         var detections: MatOfRect = MatOfRect()
 
-        faceDetector.detectMultiScale(image, detections, 1.2)
+        faceDetector?.detectMultiScale(image, detections, 1.2)
 
         Log.i("FACE_DETECTION", "${detections.toList().size}")
         Log.i("FACE_DETECTION", detections.toString())
@@ -104,17 +123,8 @@ class MainActivity: FlutterActivity() {
         Utils.matToBitmap(cropped, bitmap)
         val resizedImage = Bitmap.createScaledBitmap(bitmap, 48, 48, true)
 
-        val inputTensor: Tensor = TensorImageUtils.bitmapToFloat32Tensor(resizedImage, TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
+        val inputTensor: Tensor = TensorImageUtils.bitmapToFloat32Tensor(resizedImage, floatArrayOf(0.03F, 0.03F, 0.03F), floatArrayOf(1.018F, 1.018F, 1.018F));
         Log.i("INPUT TENSOR", "${inputTensor.shape()}")
-
-
-        var module: Module? = null
-        try {
-            module =  PyTorchAndroid.loadModuleFromAsset(assets, "convnet-traced-new.pt")
-            Log.i("PYTORCH", "MODULE LOADED SUCCESSFULLY")
-        }catch (e: IOException){
-            Log.i("IO_EXCEPTION", "IO EXCEPTION WHILE LOADING THE MODEL")
-        }
 
         val outputTensor: Tensor = module?.forward(IValue.from(inputTensor))?.toTensor() ?: inputTensor
         val scores: FloatArray = outputTensor.dataAsFloatArray

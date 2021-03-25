@@ -15,6 +15,7 @@ class _CaptureImageState extends State<CaptureImage>
     with WidgetsBindingObserver {
   CameraController _controller;
   Future<void> _initializeControllerFuture;
+  int _currentCamera = 0;
 
   var isCameraReady = false;
   var showCapturedPhoto = false;
@@ -39,7 +40,7 @@ class _CaptureImageState extends State<CaptureImage>
     } else if (state == AppLifecycleState.resumed) {
       if (_controller != null) {
         setState(() {
-          _controller = CameraController(cameras[1], ResolutionPreset.max);
+          _controller = CameraController(cameras.first, ResolutionPreset.max);
           _initializeControllerFuture = _controller.initialize();
         });
       }
@@ -63,6 +64,22 @@ class _CaptureImageState extends State<CaptureImage>
     });
   }
 
+  changeCamera() {
+    if (_currentCamera == 0) {
+      setState(() {
+        _currentCamera = 1;
+        _controller = CameraController(cameras[1], ResolutionPreset.max);
+        _initializeControllerFuture = _controller.initialize();
+      });
+    } else {
+      setState(() {
+        _currentCamera = 0;
+        _controller = CameraController(cameras[0], ResolutionPreset.max);
+        _initializeControllerFuture = _controller.initialize();
+      });
+    }
+  }
+
   @override
   void dispose() {
     // Dispose of the controller when the widget is disposed.
@@ -72,7 +89,7 @@ class _CaptureImageState extends State<CaptureImage>
   }
 
   Future<void> _initializeCamera() async {
-    _controller = CameraController(cameras[1], ResolutionPreset.max);
+    _controller = CameraController(cameras[0], ResolutionPreset.max);
     _initializeControllerFuture = _controller.initialize();
     if (!mounted) {
       return;
@@ -121,6 +138,22 @@ class _CaptureImageState extends State<CaptureImage>
                 color: Colors.white,
                 onPressed: () {
                   captureImage(context);
+                },
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
+              child: IconButton(
+                icon: Icon(_currentCamera == 0
+                    ? Icons.camera_front
+                    : Icons.camera_rear),
+                iconSize: 40.0,
+                color: Colors.white,
+                onPressed: () {
+                  changeCamera();
                 },
               ),
             ),
