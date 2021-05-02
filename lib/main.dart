@@ -1,7 +1,12 @@
 import 'package:camera/camera.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_fer/pages/captureImage.dart';
 import 'package:flutter_fer/pages/imageResult.dart';
+import 'package:flutter_fer/pages/SongList.dart';
+import 'package:flutter_fer/pages/Player.dart';
 import 'package:flutter_fer/routes.dart';
 
 List<CameraDescription> cameras;
@@ -9,7 +14,34 @@ List<CameraDescription> cameras;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   cameras = await availableCameras();
-  runApp(MyApp());
+  runApp(App());
+}
+
+class App extends StatelessWidget {
+  final Future<FirebaseApp> _initialization = Firebase.initializeApp();
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: FutureBuilder(
+        future: _initialization,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Text("Something went wrong in firebase");
+          }
+
+          if (snapshot.connectionState == ConnectionState.done) {
+            return MyApp();
+          }
+
+          return Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -28,12 +60,14 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primaryColor: Color(0xFF1D6FcF),
       ),
       initialRoute: CAPTURE_IMAGE,
       routes: {
         CAPTURE_IMAGE: (context) => CaptureImage(),
         IMAGE_RESULT: (context) => ImageResult(),
+        PLAYER_SCREEN: (context) => PlayerScreen(),
+        SONG_LIST: (context) => SongList(),
       },
     );
   }

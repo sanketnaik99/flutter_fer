@@ -23,7 +23,6 @@ class _CaptureImageState extends State<CaptureImage>
 
   @override
   void initState() {
-    // TODO: implement initState
     WidgetsBinding.instance.addObserver(this);
     super.initState();
     _initializeCamera();
@@ -102,9 +101,6 @@ class _CaptureImageState extends State<CaptureImage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Capture Image'),
-      ),
       body: Stack(
         children: [
           FutureBuilder<void>(
@@ -145,7 +141,7 @@ class _CaptureImageState extends State<CaptureImage>
           Align(
             alignment: Alignment.bottomRight,
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 20.0, right: 20.0),
+              padding: const EdgeInsets.only(bottom: 35.0, right: 20.0),
               child: IconButton(
                 icon: Icon(_currentCamera == 0
                     ? Icons.camera_front
