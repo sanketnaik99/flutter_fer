@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_fer/pages/SongList.dart';
 import 'package:flutter_fer/routes.dart';
 
 class ImageResultArguments {
@@ -64,7 +65,7 @@ class _ImageResultState extends State<ImageResult> {
           Column(
             children: [
               Text('Prediction => ${_prediction}'),
-              Text('Time Taken = ${_timeTaken} ms'),
+              Text('Time Taken => ${_timeTaken} ms'),
             ],
           ),
           Padding(
@@ -88,7 +89,7 @@ class _ImageResultState extends State<ImageResult> {
                       Text(
                         'Retry',
                         style: TextStyle(
-                          fontSize: 18.0,
+                          fontSize: 16.0,
                         ),
                       ),
                     ],
@@ -96,6 +97,31 @@ class _ImageResultState extends State<ImageResult> {
                   onPressed: () {
                     Navigator.of(context).pushReplacementNamed(CAPTURE_IMAGE);
                   },
+                ),
+                SizedBox(
+                  width: 30.0,
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // Navigator.of(context).pushReplacementNamed(SONG_LIST);
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                SongList(prediction: _prediction)));
+                  },
+                  child: Row(
+                    children: [
+                      Text(
+                        "Proceed",
+                        style: TextStyle(fontSize: 16.0),
+                      ),
+                      Icon(Icons.chevron_right_sharp),
+                    ],
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                  ),
                 ),
               ],
             ),
