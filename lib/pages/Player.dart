@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_fer/pages/Song.dart';
 import 'package:just_audio/just_audio.dart';
@@ -59,6 +57,9 @@ class PlayerScreenState extends State<PlayerScreen> {
 
       player.positionStream.listen((duration) {
         currentValue = duration.inMilliseconds.toDouble();
+        if (currentValue >= maximumValue){
+          widget.changeTrack(true);
+        }
         setState(() {
           currentTime = getDuration(currentValue);
         });

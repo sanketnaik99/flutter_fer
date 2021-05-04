@@ -57,7 +57,7 @@ class MainActivity: FlutterActivity() {
 
 
         try {
-            module =  PyTorchAndroid.loadModuleFromAsset(assets, "convnet-traced-new.pt")
+            module =  PyTorchAndroid.loadModuleFromAsset(assets, "model.pt")
             Log.i("PYTORCH", "MODULE LOADED SUCCESSFULLY")
         }catch (e: IOException){
             Log.i("IO_EXCEPTION", "IO EXCEPTION WHILE LOADING THE MODEL")
@@ -119,11 +119,13 @@ class MainActivity: FlutterActivity() {
 
         val cropped: Mat = Mat(image, rect)
         resize(cropped, cropped, Size(48.0, 48.0))
+        cvtColor(cropped, cropped, COLOR_BGRA2RGB)
+        cvtColor(cropped, cropped, COLOR_RGB2GRAY)
         val bitmap: Bitmap = Bitmap.createBitmap(cropped.cols(), cropped.rows(), Bitmap.Config.ARGB_8888)
         Utils.matToBitmap(cropped, bitmap)
         val resizedImage = Bitmap.createScaledBitmap(bitmap, 48, 48, true)
 
-        val inputTensor: Tensor = TensorImageUtils.bitmapToFloat32Tensor(resizedImage, floatArrayOf(0.03F, 0.03F, 0.03F), floatArrayOf(1.018F, 1.018F, 1.018F));
+        val inputTensor: Tensor = TensorImageUtils.bitmapToFloat32Tensor(resizedImage, TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
         Log.i("INPUT TENSOR", "${inputTensor.shape()}")
 
         val outputTensor: Tensor = module?.forward(IValue.from(inputTensor))?.toTensor() ?: inputTensor
@@ -140,11 +142,15 @@ class MainActivity: FlutterActivity() {
                 maxScoreIdx = i
             }
         }
-
+        Log.i("OUTPUT PREDICTION", "PREDICTED OUTPUT CLASS => ${maxScoreIdx}")
+        if (maxScoreIdx == 3){
+            maxScoreIdx = 2;
+            Log.i("OUTPUT PREDICTION", "CORRECTED OUTPUT CLASS => ${maxScoreIdx}")
+        }
         val classes: Array<String> = arrayOf("fear", "angry", "happy", "neutral", "surprise", "disgust", "sad")
         val prediction = classes[maxScoreIdx]
 
-        Log.i("OUTPUT PREDICTION", "PREDICTED OUTPUT CLASS => ${maxScoreIdx}")
+
         Log.i("OUTPUT PREDICTION", "PREDICTED OUTPUT => ${prediction}")
 
         putText(image, prediction, Point(rect.x.toDouble(), (rect.y.toDouble() - 10.0)), Core.FONT_HERSHEY_SIMPLEX, 2.0, Scalar(0.0, 255.0, 0.0, 255.0))
