@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_audio_query/flutter_audio_query.dart';
-import 'package:flutter_fer/pages/Player.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+// import 'package:flutter_audio_query/flutter_audio_query.dart';
+import 'package:flutter_fer/pages/Player.dart';
 import 'package:flutter_fer/pages/Song.dart';
 
 class SongList extends StatefulWidget {
@@ -14,7 +14,7 @@ class SongList extends StatefulWidget {
 
 class _SongListState extends State<SongList> {
   // List of songs
-  final FlutterAudioQuery audioQuery = FlutterAudioQuery();
+  // final FlutterAudioQuery audioQuery = FlutterAudioQuery();
 
   List<Song> songs = [];
   List music = [];
